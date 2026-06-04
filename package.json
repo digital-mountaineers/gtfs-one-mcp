@@ -1,6 +1,6 @@
 {
   "name": "gtfs-pro-mcp",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Model Context Protocol server for any WP GTFS Pro transit site. Lets AI assistants query bus stops, schedules, routes, live vehicle positions, and service alerts from an agency's live GTFS data. Runs locally (stdio) or as a hosted remote connector (Streamable HTTP).",
   "license": "GPL-2.0-or-later",
   "author": "Digital Mountaineers",

@@ -82,6 +82,7 @@ export function registerTools(server: McpServer, api: ApiClient): void {
         "List all transit feeds (agencies) configured on this GTFS Pro site. Most " +
         "sites have a single feed. Use this to discover feed_id values when a site " +
         "serves more than one agency.",
+      annotations: { readOnlyHint: true, openWorldHint: true },
       inputSchema: {},
     },
     () =>
@@ -107,6 +108,7 @@ export function registerTools(server: McpServer, api: ApiClient): void {
         "with its distance, the routes that serve it, and the next scheduled " +
         "departure times per route. If you only have an address or place name, call " +
         "geocode_address first to get coordinates.",
+      annotations: { readOnlyHint: true, openWorldHint: true },
       inputSchema: {
         latitude: z.number().min(-90).max(90).describe("Latitude (-90 to 90)."),
         longitude: z.number().min(-180).max(180).describe("Longitude (-180 to 180)."),
@@ -168,6 +170,7 @@ export function registerTools(server: McpServer, api: ApiClient): void {
         "rider names a place (\"Big Bear Village\", \"Goodwin's Market\") rather than " +
         "giving coordinates. Returns matching stops with their stop_id, which you can " +
         "pass to get_stop_departures.",
+      annotations: { readOnlyHint: true, openWorldHint: true },
       inputSchema: {
         query: z.string().min(2).describe("Stop name, landmark, or stop code (min 2 chars)."),
         limit: z.number().int().positive().max(12).optional().describe("Max results (default 6, max 12)."),
@@ -205,6 +208,7 @@ export function registerTools(server: McpServer, api: ApiClient): void {
         "Get the next departures from a specific stop, merged across all routes that " +
         "serve it. Use after finding a stop via find_nearby_stops or search_stops. " +
         "Times are in the agency's local timezone; 'minutes' is minutes from now.",
+      annotations: { readOnlyHint: true, openWorldHint: true },
       inputSchema: {
         stop_id: z.string().min(1).describe("GTFS stop_id (from a stop search/nearby result)."),
         limit: z.number().int().positive().max(20).optional().describe("Max departures (default 8, max 20)."),
@@ -244,6 +248,7 @@ export function registerTools(server: McpServer, api: ApiClient): void {
         "lat/lon points forming the path) and the stops it serves. Useful for " +
         "describing where a route goes. The shape can be long; the summary reports " +
         "its size and lists the stops.",
+      annotations: { readOnlyHint: true, openWorldHint: true },
       inputSchema: {
         route_id: z.string().min(1).describe("GTFS route_id."),
         ...feedArg,
@@ -278,6 +283,7 @@ export function registerTools(server: McpServer, api: ApiClient): void {
         "Get every route in the transit system with its name, color, and the stops it " +
         "serves. Use when the rider asks what routes exist or wants an overview of the " +
         "network. Shape geometry is omitted from the summary to keep it readable.",
+      annotations: { readOnlyHint: true, openWorldHint: true },
       inputSchema: { ...feedArg },
     },
     (args) =>
@@ -304,6 +310,7 @@ export function registerTools(server: McpServer, api: ApiClient): void {
         "IMPORTANT: an empty result is normal and means there are currently NO active " +
         "alerts — it does NOT mean buses aren't running. Many agencies have no alerts " +
         "most of the time, and some have no realtime feed at all.",
+      annotations: { readOnlyHint: true, openWorldHint: true },
       inputSchema: {
         route_id: z.string().optional().describe("Optional: filter alerts to one route_id."),
         ...feedArg,
@@ -348,6 +355,7 @@ export function registerTools(server: McpServer, api: ApiClient): void {
         "heading, the route it's on, and its next stop. IMPORTANT: an empty result is " +
         "normal — it means no vehicles are currently reporting (off-hours, or the " +
         "agency has no realtime vehicle feed). It does NOT imply the schedule is wrong.",
+      annotations: { readOnlyHint: true, openWorldHint: true },
       inputSchema: {
         route_id: z.string().optional().describe("Optional: filter to vehicles on one route_id."),
         ...feedArg,
@@ -390,6 +398,7 @@ export function registerTools(server: McpServer, api: ApiClient): void {
         "Convert an address, landmark, or place name into coordinates, biased to the " +
         "agency's service area. Use this to get a latitude/longitude you can then pass " +
         "to find_nearby_stops.",
+      annotations: { readOnlyHint: true, openWorldHint: true },
       inputSchema: {
         address: z.string().min(1).describe("Address, landmark, or place name."),
         ...feedArg,
