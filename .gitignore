@@ -3,3 +3,4 @@ dist/
 *.log
 .DS_Store
 gtfs-pro.config.json
+deploy/.env

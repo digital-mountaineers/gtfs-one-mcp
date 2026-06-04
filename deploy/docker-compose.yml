@@ -1,0 +1,41 @@
+# Remote MCP connector for dm-1 (Hetzner) — runs the HTTP server behind Caddy,
+# which terminates TLS and gets a Let's Encrypt cert automatically.
+#
+# Reads settings from deploy/.env (copy deploy/.env.example). Bring it up with:
+#   cd deploy && docker compose up -d --build
+#
+# Caddy needs ports 80 + 443 free on the host. Uptime Kuma typically listens on
+# 3001, so this should coexist — confirm with: sudo ss -tlnp | grep -E ':80 |:443 '
+
+services:
+  gtfs-pro-mcp:
+    build: ..                      # builds the repo-root Dockerfile (HTTP mode)
+    restart: unless-stopped
+    environment:
+      GTFS_PRO_URL: ${GTFS_PRO_URL}
+      GTFS_PRO_AGENCY_NAME: ${GTFS_PRO_AGENCY_NAME}
+      GTFS_PRO_FEED_ID: ${GTFS_PRO_FEED_ID:-default}
+      MCP_AUTH_TOKEN: ${MCP_AUTH_TOKEN:-}
+      PORT: "3000"
+    expose:
+      - "3000"                     # internal only; Caddy reaches it over the compose network
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      MCP_DOMAIN: ${MCP_DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - gtfs-pro-mcp
+
+volumes:
+  caddy_data:
+  caddy_config:

@@ -1,0 +1,8 @@
+node_modules
+dist
+.git
+.github
+deploy
+test
+*.log
+gtfs-pro.config.json
