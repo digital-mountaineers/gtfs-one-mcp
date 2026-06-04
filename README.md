@@ -88,6 +88,29 @@ Edit `claude_desktop_config.json` (Settings → Developer → Edit Config) and a
 Restart Claude Desktop, then ask: *"What bus stops are near \<a place in the
 service area\>?"* or *"When's the next bus from \<stop name\>?"*
 
+> **Windows users:** Claude Desktop on Windows can't launch `npx` directly (it's a
+> `.cmd` shim, not an executable), so the server silently fails to start and Claude
+> falls back to web search. Wrap the command in `cmd` instead:
+>
+> ```json
+> {
+>   "mcpServers": {
+>     "gtfs-pro-transit": {
+>       "command": "cmd",
+>       "args": ["/c", "npx", "-y", "gtfs-pro-mcp"],
+>       "env": {
+>         "GTFS_PRO_URL": "https://your-agency-site.org",
+>         "GTFS_PRO_FEED_ID": "default",
+>         "GTFS_PRO_AGENCY_NAME": "Your Transit Agency"
+>       }
+>     }
+>   }
+> }
+> ```
+>
+> After editing, fully **quit** Claude Desktop (right-click the system-tray icon →
+> Quit — closing the window isn't enough) and reopen it.
+
 ## Use with ChatGPT / other MCP clients
 
 Any client that launches a local stdio MCP server works the same way — run
