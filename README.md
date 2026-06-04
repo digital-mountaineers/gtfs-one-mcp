@@ -121,6 +121,46 @@ npm install -g gtfs-pro-mcp
 GTFS_PRO_URL=https://your-agency-site.org gtfs-pro-mcp
 ```
 
+## Remote / hosted connector (Streamable HTTP)
+
+The stdio setup above only works in clients that launch a **local process** (classic
+Claude Desktop, Cursor, etc.). The **Claude apps that use remote connectors** — the
+newer desktop app and **claude.ai on the web** — instead add an MCP server by **URL**.
+For those, run the server in **HTTP mode** and host it somewhere with a public HTTPS
+address; then add that URL as a custom connector.
+
+Run it in HTTP mode:
+
+```bash
+GTFS_PRO_URL=https://your-agency-site.org \
+GTFS_PRO_AGENCY_NAME="Your Transit Agency" \
+PORT=3000 \
+gtfs-pro-mcp-http        # or: npm run start:http
+```
+
+This serves the MCP endpoint at **`/mcp`** (and a `/healthz` check). Extra env:
+
+| Env | Default | Notes |
+|-----|---------|-------|
+| `PORT` | `3000` | Most hosts inject this automatically |
+| `MCP_AUTH_TOKEN` | — | Optional. If set, clients must send `Authorization: Bearer <token>`. Leave unset for an open server — the transit data is public. |
+
+### Deploy
+
+- **Docker:** a `Dockerfile` is included — `docker build -t gtfs-pro-mcp . && docker run -p 3000:3000 -e GTFS_PRO_URL=… -e GTFS_PRO_AGENCY_NAME=… gtfs-pro-mcp`
+- **Render / Railway / Fly.io (Node):** build `npm install && npm run build`, start `npm run start:http`, set the env vars. A `render.yaml` blueprint is included; Render gives you HTTPS automatically.
+- **Your own VPS:** run behind nginx/Caddy with TLS, proxying to the Node port.
+
+The data is public and read-only, so an open endpoint is fine; add `MCP_AUTH_TOKEN`
+if you'd rather gate it.
+
+### Add it to Claude
+
+In the Claude desktop app or claude.ai: **Settings → Connectors → Add custom
+connector**, give it a name, and paste your server's URL ending in **`/mcp`**
+(e.g. `https://gtfs-pro-mcp.onrender.com/mcp`). Then ask a transit question and
+you'll see the `gtfs-pro-transit` tools used.
+
 ## Local development
 
 ```bash
@@ -132,12 +172,18 @@ node test/smoke.mjs # exercise all 9 tools against a live site
 ## How it fits together
 
 ```
-AI assistant  ──MCP/stdio──►  gtfs-pro-mcp  ──HTTPS──►  WP GTFS Pro REST API
-(Claude, GPT)                 (this package)            /wp-json/wp-gtfs-pro/v1/*
+Local (stdio):
+AI client  ──MCP/stdio──►  gtfs-pro-mcp  ──HTTPS──►  WP GTFS Pro REST API
+(Desktop)                  (local process)           /wp-json/wp-gtfs-pro/v1/*
+
+Remote (Streamable HTTP):
+AI client  ──MCP/HTTPS──►  gtfs-pro-mcp-http  ──HTTPS──►  WP GTFS Pro REST API
+(web/app)                  (hosted service /mcp)          /wp-json/wp-gtfs-pro/v1/*
 ```
 
-A future release adds a Streamable-HTTP transport so the server can run as a
-hosted remote service (one endpoint per agency) instead of a local process.
+Both transports share the same nine tools and config — pick stdio for local
+clients (Claude Desktop, Cursor) or HTTP for connector-based clients (the Claude
+app, claude.ai web, ChatGPT).
 
 ## License
 

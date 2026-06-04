@@ -1,0 +1,22 @@
+# Render.com blueprint — one-click-ish deploy of the remote (HTTP) MCP server.
+# In Render: New → Blueprint → point at this repo. Then set GTFS_PRO_URL and
+# GTFS_PRO_AGENCY_NAME (marked sync:false so you fill them in the dashboard).
+# Render provides HTTPS automatically; your MCP endpoint is https://<service>.onrender.com/mcp
+services:
+  - type: web
+    name: gtfs-pro-mcp
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm run start:http
+    healthCheckPath: /healthz
+    envVars:
+      - key: GTFS_PRO_URL
+        sync: false
+      - key: GTFS_PRO_AGENCY_NAME
+        sync: false
+      - key: GTFS_PRO_FEED_ID
+        value: default
+      # Optional: set a bearer token to require auth on the endpoint.
+      # - key: MCP_AUTH_TOKEN
+      #   generateValue: true

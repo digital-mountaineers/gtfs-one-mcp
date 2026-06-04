@@ -1,45 +1,28 @@
 #!/usr/bin/env node
 /**
- * GTFS Pro MCP server — entry point.
+ * GTFS Pro MCP server — stdio entry point.
  *
- * Loads configuration, builds the API client, registers the nine transit tools,
- * and speaks MCP over stdio (the transport Claude Desktop / ChatGPT desktop use
- * to launch a local server). All diagnostics go to stderr so they never corrupt
- * the stdout JSON-RPC stream.
+ * Loads configuration, builds the server, and speaks MCP over stdio (the
+ * transport Claude Desktop / Cursor / ChatGPT desktop use to launch a local
+ * server). For the hosted/remote transport see `http.ts`. All diagnostics go to
+ * stderr so they never corrupt the stdout JSON-RPC stream.
  */
 
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 
 import { loadConfig } from "./config.js";
-import { ApiClient } from "./api-client.js";
-import { registerTools } from "./tools.js";
+import { createServer } from "./server.js";
 
 async function main(): Promise<void> {
   const config = loadConfig();
-  const api = new ApiClient(config);
-
-  const instructions =
-    `This server provides real-time transit information for ${config.agencyName}.` +
-    (config.agencyDescription ? ` ${config.agencyDescription}` : "") +
-    ` Use the tools to look up bus stops, schedules, routes, live vehicle positions, ` +
-    `and service alerts. Always use the tools for schedule and stop data — never guess ` +
-    `times. Note: realtime tools (get_service_alerts, get_live_vehicles) returning an ` +
-    `empty result is normal and means "nothing active right now," not "no service."`;
-
-  const server = new McpServer(
-    { name: "gtfs-pro-transit", version: "1.0.0" },
-    { instructions }
-  );
-
-  registerTools(server, api);
+  const server = createServer(config);
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
 
   // Visible in the client's MCP logs; harmless on stderr.
   console.error(
-    `gtfs-pro-mcp ready — agency: ${config.agencyName}, site: ${config.gtfsProUrl}, ` +
+    `gtfs-pro-mcp ready (stdio) — agency: ${config.agencyName}, site: ${config.gtfsProUrl}, ` +
       `default feed: ${config.feedId}`
   );
 }
