@@ -1,0 +1,7 @@
+{
+  "gtfs_pro_url": "https://your-agency-site.org",
+  "feed_id": "default",
+  "cache_ttl_seconds": 30,
+  "agency_name": "Your Transit Agency",
+  "agency_description": "Public transit serving your service area. Describe the cities, landmarks, and regions covered so the AI knows what this server is for."
+}
