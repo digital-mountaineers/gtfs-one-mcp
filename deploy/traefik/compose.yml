@@ -10,6 +10,12 @@
 # Traefik picks up the new router automatically (Docker provider) and requests a
 # cert via its letsencrypt resolver — no Traefik restart needed.
 
+# Explicit project name so Compose never adopts the host's real "traefik" project.
+# (The folder is deploy/traefik, which would otherwise default the project name to
+# "traefik" and treat the real Traefik container as an orphan — a careless
+# `docker compose down --remove-orphans` here could then delete your reverse proxy.)
+name: gtfs-pro-mcp
+
 services:
   gtfs-pro-mcp:
     build: ../..                 # repo-root Dockerfile (HTTP server)
