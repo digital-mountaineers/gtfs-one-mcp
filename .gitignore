@@ -4,3 +4,4 @@ dist/
 .DS_Store
 gtfs-pro.config.json
 deploy/.env
+deploy/traefik/.env

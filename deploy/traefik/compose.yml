@@ -1,0 +1,36 @@
+# Deploy on a host that ALREADY runs Traefik (e.g. dm-1). No second proxy — the
+# MCP container joins the existing external `proxy` network and Traefik routes to
+# it via labels, matching the conventions of the other services on the box
+# (entrypoint: websecure, certresolver: letsencrypt).
+#
+#   cd deploy/traefik
+#   cp .env.example .env && nano .env     # set MCP_DOMAIN, GTFS_PRO_URL, agency
+#   docker compose up -d --build
+#
+# Traefik picks up the new router automatically (Docker provider) and requests a
+# cert via its letsencrypt resolver — no Traefik restart needed.
+
+services:
+  gtfs-pro-mcp:
+    build: ../..                 # repo-root Dockerfile (HTTP server)
+    image: gtfs-pro-mcp:local
+    restart: unless-stopped
+    environment:
+      GTFS_PRO_URL: ${GTFS_PRO_URL}
+      GTFS_PRO_AGENCY_NAME: ${GTFS_PRO_AGENCY_NAME}
+      GTFS_PRO_FEED_ID: ${GTFS_PRO_FEED_ID:-default}
+      MCP_AUTH_TOKEN: ${MCP_AUTH_TOKEN:-}
+      PORT: "3000"
+    networks:
+      - proxy
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: "proxy"
+      traefik.http.routers.gtfs-pro-mcp.rule: "Host(`${MCP_DOMAIN}`)"
+      traefik.http.routers.gtfs-pro-mcp.entrypoints: "websecure"
+      traefik.http.routers.gtfs-pro-mcp.tls.certresolver: "letsencrypt"
+      traefik.http.services.gtfs-pro-mcp.loadbalancer.server.port: "3000"
+
+networks:
+  proxy:
+    external: true

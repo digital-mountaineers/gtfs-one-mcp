@@ -1,7 +1,17 @@
 # Deploying the remote MCP connector
 
-Runs the HTTP server behind Caddy (automatic Let's Encrypt HTTPS) via Docker
-Compose. Written for `dm-1` (Hetzner), which already has Docker.
+Two flavors:
+
+- **`deploy/traefik/`** — for a host **already running Traefik** (like `dm-1`). The
+  MCP container joins the existing `proxy` network and Traefik routes to it via
+  labels. No second proxy. **Use this on dm-1.**
+- **`deploy/docker-compose.yml` + `Caddyfile`** (below) — standalone, for a host
+  with **no** existing reverse proxy; brings its own Caddy for automatic HTTPS.
+
+---
+
+The standalone (Caddy) flow runs the HTTP server behind Caddy (automatic Let's
+Encrypt HTTPS) via Docker Compose. Written for a fresh host with Docker.
 
 ## Prerequisites
 - A host with Docker + Docker Compose
