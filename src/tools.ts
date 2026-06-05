@@ -14,6 +14,9 @@ import type {
   Feed,
   GeocodeResponse,
   NearbyStopsResponse,
+  PlanFare,
+  PlanItinerary,
+  PlanResponse,
   RouteMapResponse,
   SearchStopsResponse,
   SystemMapResponse,
@@ -422,4 +425,128 @@ export function registerTools(server: McpServer, api: ApiClient): void {
         );
       })
   );
+
+  /* 10. plan_trip */
+  server.registerTool(
+    "plan_trip",
+    {
+      title: "Plan a trip (A → B)",
+      description:
+        "Plan a transit trip between two places: which routes to ride, when each " +
+        "leg departs and arrives, transfers, walking, and the fare. This is the " +
+        "definitive way to answer 'how do I get from A to B?' — do NOT try to " +
+        "assemble a trip yourself from find_nearby_stops/get_stop_departures. " +
+        "`from` and `to` may be a stop name, an address/landmark, or a 'lat,lon' " +
+        "pair. By default the trip leaves now; pass depart_at to leave at a time, " +
+        "or arrive_by to arrive by a time (local agency time, ISO 8601 like " +
+        "2026-06-04T15:00:00 — they are mutually exclusive). An empty result is " +
+        "normal and carries a reason (e.g. no service today, outside the service " +
+        "area) with a helpful message — relay it; it does NOT mean the tool failed.",
+      annotations: { readOnlyHint: true, openWorldHint: true },
+      inputSchema: {
+        from: z.string().min(1).describe("Origin: a stop name, address/landmark, or 'lat,lon'."),
+        to: z.string().min(1).describe("Destination: a stop name, address/landmark, or 'lat,lon'."),
+        depart_at: z
+          .string()
+          .optional()
+          .describe("Leave at this local time (ISO 8601, e.g. 2026-06-04T15:00:00). Omit to leave now. Mutually exclusive with arrive_by."),
+        arrive_by: z
+          .string()
+          .optional()
+          .describe("Arrive by this local time (ISO 8601). Mutually exclusive with depart_at."),
+        accessible_only: z
+          .boolean()
+          .optional()
+          .describe("Only wheelchair-accessible trips and stops."),
+        bikes: z.boolean().optional().describe("Only trips that allow bikes."),
+        rider_category: z
+          .string()
+          .optional()
+          .describe("Fare category for pricing: adult (default), senior, youth, or disabled."),
+        ...feedArg,
+      },
+    },
+    (args) =>
+      guard(async () => {
+        const data = await api.post<PlanResponse>("/trips/plan", {
+          feed_id: feed(args.feed_id),
+          from: asPlace(args.from),
+          to: asPlace(args.to),
+          depart_at: args.depart_at,
+          arrive_by: args.arrive_by,
+          accessible_only: args.accessible_only ?? false,
+          bikes: args.bikes ?? false,
+          rider_category: args.rider_category ?? "adult",
+          results: 3,
+        });
+
+        if (!data.itineraries?.length) {
+          let msg = data.message || "No trips were found for that request.";
+          if (data.reason === "no_service_today" && data.next_service_date) {
+            msg += ` The next day with service is ${data.next_service_date}.`;
+          }
+          if (data.reason === "outside_service_area" && data.nearest_stop) {
+            msg += ` The nearest served stop is ${data.nearest_stop.name}` +
+              (data.nearest_stop_distance ? ` (${data.nearest_stop_distance} away)` : "") + ".";
+          }
+          return text(msg);
+        }
+
+        const blocks = data.itineraries.map((it, i) => formatItinerary(it, i + 1));
+        const header = `Trip from ${args.from} to ${args.to}:`;
+        return text(`${header}\n\n${blocks.join("\n\n")}`);
+      })
+  );
+}
+
+/** Parse a from/to argument into the REST contract's place object. */
+function asPlace(v: string): { lat: number; lon: number } | { address: string } {
+  const m = v.trim().match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/);
+  if (m) {
+    return { lat: parseFloat(m[1]), lon: parseFloat(m[2]) };
+  }
+  return { address: v.trim() };
+}
+
+/** Render one itinerary as readable prose with a numbered leg list. */
+function formatItinerary(it: PlanItinerary, n: number): string {
+  const transfers =
+    it.transfers === 0 ? "no transfers" : `${it.transfers} transfer${it.transfers === 1 ? "" : "s"}`;
+  const acc = it.accessible ? ", wheelchair accessible" : "";
+  const fare = formatFare(it.fare);
+  const head =
+    `Option ${n} — ${it.duration_min} min (depart ${it.depart}, arrive ${it.arrive}), ` +
+    `${transfers}, ${it.walk_display} walking${acc}. Fare: ${fare}.`;
+
+  const steps = it.legs.map((leg) => {
+    if (leg.type === "walk") {
+      const dest = leg.to === "destination" ? "your destination" : leg.to_stop?.name ?? "the next stop";
+      return `Walk to ${dest} (${leg.display}${leg.minutes ? `, ${leg.minutes} min` : ""})`;
+    }
+    if (leg.type === "transfer") {
+      return `Transfer at ${leg.to_stop?.name ?? ""} (${leg.display}${leg.minutes ? `, ${leg.minutes} min` : ""})`;
+    }
+    const toward = leg.headsign ? ` toward ${leg.headsign}` : "";
+    const stops = leg.intermediate_stops ? `, ${leg.intermediate_stops} stops` : "";
+    return (
+      `Ride Route ${leg.route?.name ?? leg.route?.id ?? ""}${toward} — board ${leg.board_stop?.name ?? ""} ` +
+      `at ${leg.board_time}, get off at ${leg.alight_stop?.name ?? ""} at ${leg.alight_time}${stops}`
+    );
+  });
+  const numbered = steps.map((s, i) => `  ${i + 1}. ${s}`).join("\n");
+  return `${head}\n${numbered}`;
+}
+
+/** Fare summary line; honest about partial/unavailable (never a false $0). */
+function formatFare(fare: PlanFare): string {
+  if (!fare) return "not available";
+  if (fare.status === "exact" || fare.status === "partial") {
+    if (fare.total === "0.00") return "Fare-free";
+    const amount = `${fare.currency ? fare.currency + " " : ""}${fare.total}`;
+    const extra = fare.status === "partial" ? " (partial — see route fares)" : fare.note ? ` (${fare.note})` : "";
+    return amount + extra;
+  }
+  // unavailable / cross_agency
+  const routes = fare.fallback_routes?.length ? ` — see fares for routes ${fare.fallback_routes.join(", ")}` : "";
+  return `not available${routes}`;
 }

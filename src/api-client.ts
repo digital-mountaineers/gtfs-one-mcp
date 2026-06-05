@@ -88,6 +88,43 @@ export class ApiClient {
   }
 
   /**
+   * POST a REST path with a JSON body. Not cached (plans are query-specific and
+   * cheap to recompute server-side). Same error-to-prose handling as get().
+   */
+  async post<T>(path: string, body: unknown): Promise<T> {
+    let res: Response;
+    try {
+      res = await fetch(this.base + path, {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          "User-Agent": "gtfs-pro-mcp",
+        },
+        body: JSON.stringify(body),
+      });
+    } catch {
+      throw new GtfsApiError(
+        `The transit data service at ${this.config.gtfsProUrl} is currently ` +
+          `unavailable. The rider should check the agency website directly.`
+      );
+    }
+
+    const raw = await res.text();
+    let parsed: unknown;
+    try {
+      parsed = raw ? JSON.parse(raw) : null;
+    } catch {
+      parsed = null;
+    }
+
+    if (!res.ok) {
+      throw new GtfsApiError(this.describeError(res.status, parsed));
+    }
+    return parsed as T;
+  }
+
+  /**
    * Convert a non-2xx response into a readable sentence. WordPress REST errors
    * carry `{ code, message }`; surface the message when present.
    */

@@ -157,3 +157,68 @@ export interface GeocodeResponse {
   lon: number;
   label: string;
 }
+
+/* ----------------------------- Trip planner (TP-2) ---------------------------- */
+
+export interface PlanStopRef {
+  id: string;
+  name: string;
+  code?: string;
+  lat?: number | null;
+  lon?: number | null;
+}
+
+export interface PlanLeg {
+  type: "walk" | "transit" | "transfer";
+  // walk
+  from?: string; // "origin"
+  to?: string; // "destination"
+  to_stop?: PlanStopRef;
+  from_stop?: PlanStopRef;
+  meters?: number;
+  display?: string;
+  minutes?: number;
+  // transit
+  route?: { id: string; name: string; short_name?: string; long_name?: string; color?: string; text_color?: string };
+  headsign?: string;
+  board_stop?: PlanStopRef;
+  board_time?: string;
+  alight_stop?: PlanStopRef;
+  alight_time?: string;
+  intermediate_stops?: number;
+  wheelchair?: boolean;
+  bikes?: boolean;
+}
+
+export interface PlanFare {
+  status: "exact" | "partial" | "unavailable" | "cross_agency";
+  total: string | null;
+  currency: string;
+  by_category?: Record<string, string>;
+  note?: string;
+  fallback_routes?: string[];
+}
+
+export interface PlanItinerary {
+  depart: string;
+  arrive: string;
+  duration_min: number;
+  transfers: number;
+  walk_meters: number;
+  walk_display: string;
+  accessible: boolean;
+  fare: PlanFare;
+  legs: PlanLeg[];
+  walk_only?: boolean;
+}
+
+export interface PlanResponse {
+  query?: { tz?: string; unit_system?: string; rider_category?: string; arrive_by?: boolean };
+  itineraries: PlanItinerary[];
+  reason?: string;
+  message?: string;
+  next_service_date?: string;
+  nearest_stop?: PlanStopRef;
+  nearest_stop_distance?: string;
+  ts?: number;
+}
