@@ -158,7 +158,7 @@ export interface GeocodeResponse {
   label: string;
 }
 
-/* ----------------------------- Trip planner (TP-2) ---------------------------- */
+/* --------------------- Trip planner (TP-2, route-discovery v1.9.0) -------------------- */
 
 export interface PlanStopRef {
   id: string;
@@ -168,26 +168,13 @@ export interface PlanStopRef {
   lon?: number | null;
 }
 
-export interface PlanLeg {
-  type: "walk" | "transit" | "transfer";
-  // walk
-  from?: string; // "origin"
-  to?: string; // "destination"
-  to_stop?: PlanStopRef;
-  from_stop?: PlanStopRef;
-  meters?: number;
-  display?: string;
-  minutes?: number;
-  // transit
-  route?: { id: string; name: string; short_name?: string; long_name?: string; color?: string; text_color?: string };
-  headsign?: string;
-  board_stop?: PlanStopRef;
-  board_time?: string;
-  alight_stop?: PlanStopRef;
-  alight_time?: string;
-  intermediate_stops?: number;
-  wheelchair?: boolean;
-  bikes?: boolean;
+export interface PlanRoute {
+  id: string;
+  name: string;
+  short_name?: string;
+  long_name?: string;
+  color?: string;
+  text_color?: string;
 }
 
 export interface PlanFare {
@@ -199,22 +186,60 @@ export interface PlanFare {
   fallback_routes?: string[];
 }
 
-export interface PlanItinerary {
+export interface PlanConnection {
+  leg1_arrive: string;
+  leg2_depart: string;
+  wait_min: number;
+}
+
+/** One scheduled departure for a route option (with connection detail if a transfer). */
+export interface PlanTime {
   depart: string;
   arrive: string;
   duration_min: number;
+  connection?: PlanConnection;
+}
+
+export interface PlanWalk {
+  meters: number;
+  display: string;
+  minutes: number;
+  stop?: PlanStopRef;
+}
+
+export interface PlanOptionLeg {
+  type: "transit";
+  route: PlanRoute;
+  headsign?: string;
+  board_stop: PlanStopRef;
+  alight_stop: PlanStopRef;
+  intermediate_stops?: number;
+}
+
+/** One route (or route pair) that connects the origin and destination. */
+export interface PlanOption {
   transfers: number;
-  walk_meters: number;
-  walk_display: string;
-  accessible: boolean;
+  duration_min: number;
+  routes: PlanRoute[];
+  service_days: string[];
+  from_stop?: PlanStopRef | null;
+  to_stop?: PlanStopRef | null;
+  transfer_at?: PlanStopRef | null;
+  access?: PlanWalk | null;
+  egress?: PlanWalk | null;
+  times: PlanTime[];
+  next_service_date?: string | null;
+  next_times?: PlanTime[];
   fare: PlanFare;
-  legs: PlanLeg[];
+  legs: PlanOptionLeg[];
   walk_only?: boolean;
+  walk?: PlanWalk;
 }
 
 export interface PlanResponse {
-  query?: { tz?: string; unit_system?: string; rider_category?: string; arrive_by?: boolean };
-  itineraries: PlanItinerary[];
+  query?: { from?: unknown; to?: unknown; tz?: string; unit_system?: string; rider_category?: string };
+  date?: string;
+  options: PlanOption[];
   reason?: string;
   message?: string;
   next_service_date?: string;

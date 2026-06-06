@@ -15,8 +15,9 @@ import type {
   GeocodeResponse,
   NearbyStopsResponse,
   PlanFare,
-  PlanItinerary,
+  PlanOption,
   PlanResponse,
+  PlanTime,
   RouteMapResponse,
   SearchStopsResponse,
   SystemMapResponse,
@@ -432,16 +433,17 @@ export function registerTools(server: McpServer, api: ApiClient): void {
     {
       title: "Plan a trip (A → B)",
       description:
-        "Plan a transit trip between two places: which routes to ride, when each " +
-        "leg departs and arrives, transfers, walking, and the fare. This is the " +
-        "definitive way to answer 'how do I get from A to B?' — do NOT try to " +
-        "assemble a trip yourself from find_nearby_stops/get_stop_departures. " +
-        "`from` and `to` may be a stop name, an address/landmark, or a 'lat,lon' " +
-        "pair. By default the trip leaves now; pass depart_at to leave at a time, " +
-        "or arrive_by to arrive by a time (local agency time, ISO 8601 like " +
-        "2026-06-04T15:00:00 — they are mutually exclusive). An empty result is " +
-        "normal and carries a reason (e.g. no service today, outside the service " +
-        "area) with a helpful message — relay it; it does NOT mean the tool failed.",
+        "Find every transit route that connects two places: each route, the days " +
+        "it runs, that day's departure/arrival times, the trip duration, transfers, " +
+        "and the fare. This is the definitive way to answer 'how do I get from A to " +
+        "B?' — do NOT assemble a trip yourself from find_nearby_stops/" +
+        "get_stop_departures. `from` and `to` may be a stop name, an address/" +
+        "landmark, or a 'lat,lon' pair. By default it shows today's options; pass " +
+        "depart_at to filter to times on/after a moment, or arrive_by, in local " +
+        "agency time (ISO 8601 like 2026-06-08T08:00:00). When a route doesn't run " +
+        "on the chosen day, its next service day is given. An empty result is " +
+        "normal and carries a reason + a helpful message — relay it; it does NOT " +
+        "mean the tool failed.",
       annotations: { readOnlyHint: true, openWorldHint: true },
       inputSchema: {
         from: z.string().min(1).describe("Origin: a stop name, address/landmark, or 'lat,lon'."),
@@ -477,23 +479,22 @@ export function registerTools(server: McpServer, api: ApiClient): void {
           accessible_only: args.accessible_only ?? false,
           bikes: args.bikes ?? false,
           rider_category: args.rider_category ?? "adult",
-          results: 3,
+          results: 8,
         });
 
-        if (!data.itineraries?.length) {
-          let msg = data.message || "No trips were found for that request.";
-          if (data.reason === "no_service_today" && data.next_service_date) {
-            msg += ` The next day with service is ${data.next_service_date}.`;
-          }
+        if (!data.options?.length) {
+          let msg = data.message || "No routes were found connecting those places.";
           if (data.reason === "outside_service_area" && data.nearest_stop) {
             msg += ` The nearest served stop is ${data.nearest_stop.name}` +
               (data.nearest_stop_distance ? ` (${data.nearest_stop_distance} away)` : "") + ".";
           }
+          if (data.next_service_date) msg += ` Next service: ${data.next_service_date}.`;
           return text(msg);
         }
 
-        const blocks = data.itineraries.map((it, i) => formatItinerary(it, i + 1));
-        const header = `Trip from ${args.from} to ${args.to}:`;
+        const dateNote = data.date ? ` (times shown for ${data.date})` : "";
+        const blocks = data.options.map((o, i) => formatOption(o, i + 1));
+        const header = `Routes from ${args.from} to ${args.to}${dateNote}:`;
         return text(`${header}\n\n${blocks.join("\n\n")}`);
       })
   );
@@ -508,33 +509,41 @@ function asPlace(v: string): { lat: number; lon: number } | { address: string } 
   return { address: v.trim() };
 }
 
-/** Render one itinerary as readable prose with a numbered leg list. */
-function formatItinerary(it: PlanItinerary, n: number): string {
-  const transfers =
-    it.transfers === 0 ? "no transfers" : `${it.transfers} transfer${it.transfers === 1 ? "" : "s"}`;
-  const acc = it.accessible ? ", wheelchair accessible" : "";
-  const fare = formatFare(it.fare);
-  const head =
-    `Option ${n} — ${it.duration_min} min (depart ${it.depart}, arrive ${it.arrive}), ` +
-    `${transfers}, ${it.walk_display} walking${acc}. Fare: ${fare}.`;
+/** Render one connecting route (or route pair) as readable prose. */
+function formatOption(o: PlanOption, n: number): string {
+  if (o.walk_only) {
+    return `Option ${n} — Walk ${o.duration_min} min${o.walk ? ` (${o.walk.display})` : ""}. ` +
+      `It's a short walk, likely faster than waiting for transit.`;
+  }
 
-  const steps = it.legs.map((leg) => {
-    if (leg.type === "walk") {
-      const dest = leg.to === "destination" ? "your destination" : leg.to_stop?.name ?? "the next stop";
-      return `Walk to ${dest} (${leg.display}${leg.minutes ? `, ${leg.minutes} min` : ""})`;
-    }
-    if (leg.type === "transfer") {
-      return `Transfer at ${leg.to_stop?.name ?? ""} (${leg.display}${leg.minutes ? `, ${leg.minutes} min` : ""})`;
-    }
-    const toward = leg.headsign ? ` toward ${leg.headsign}` : "";
-    const stops = leg.intermediate_stops ? `, ${leg.intermediate_stops} stops` : "";
-    return (
-      `Ride Route ${leg.route?.name ?? leg.route?.id ?? ""}${toward} — board ${leg.board_stop?.name ?? ""} ` +
-      `at ${leg.board_time}, get off at ${leg.alight_stop?.name ?? ""} at ${leg.alight_time}${stops}`
-    );
+  const routeNames = (o.routes || []).map((r) => `Route ${r.name || r.id}`).join(" → ");
+  const xfer = o.transfers === 0
+    ? "direct"
+    : `${o.transfers} transfer${o.transfers === 1 ? "" : "s"}${o.transfer_at ? ` at ${o.transfer_at.name}` : ""}`;
+  const days = o.service_days?.length ? ` Runs ${o.service_days.join(", ")}.` : "";
+  const head = `Option ${n} — ${routeNames} (${xfer}), ~${o.duration_min} min.${days} Fare: ${formatFare(o.fare)}.`;
+
+  const lines: string[] = [];
+  if (o.from_stop?.name && o.to_stop?.name) {
+    lines.push(`  Board ${o.from_stop.name} → get off at ${o.to_stop.name}.`);
+  }
+  if (o.times?.length) {
+    lines.push(`  Departures: ${formatTimes(o.times)}`);
+  } else if (o.next_service_date) {
+    const nt = o.next_times?.length ? ` — ${formatTimes(o.next_times)}` : "";
+    lines.push(`  No departures on the selected day. Next service ${o.next_service_date}${nt}.`);
+  }
+  return `${head}\n${lines.join("\n")}`;
+}
+
+/** Compact departure list: "8:16 AM → 8:40 AM; 10:00 AM → 10:24 AM, +2 more". */
+function formatTimes(times: PlanTime[]): string {
+  const shown = times.slice(0, 6).map((t) => {
+    const conn = t.connection ? ` (${t.connection.wait_min} min connection)` : "";
+    return `${t.depart} → ${t.arrive}${conn}`;
   });
-  const numbered = steps.map((s, i) => `  ${i + 1}. ${s}`).join("\n");
-  return `${head}\n${numbered}`;
+  const more = times.length > 6 ? `, +${times.length - 6} more` : "";
+  return shown.join("; ") + more;
 }
 
 /** Fare summary line; honest about partial/unavailable (never a false $0). */
