@@ -11,6 +11,7 @@ import { ApiClient, GtfsApiError } from "./api-client.js";
 import type {
   AlertsResponse,
   DeparturesResponse,
+  Departure,
   Feed,
   GeocodeResponse,
   NearbyStopsResponse,
@@ -62,6 +63,17 @@ async function guard(run: () => Promise<{ content: { type: "text"; text: string 
 }
 
 const fmtCoord = (n: number) => n.toFixed(5);
+
+/** RT-1: human label for a departure's delay-aware status. */
+function depStatus(d: Departure): string {
+  if (d.status === "no_data") return d.canceled ? "CANCELED" : "no live data";
+  if (!d.realtime) return "scheduled";
+  if (d.status === "on_time") return "on time (live)";
+  const m = Math.max(1, Math.round(Math.abs(d.delay_seconds ?? 0) / 60));
+  if (d.status === "late") return `${m} min late (live)`;
+  if (d.status === "early") return `${m} min early (live)`;
+  return "scheduled";
+}
 
 /* --------------------------------- tools ------------------------------------ */
 
@@ -207,11 +219,14 @@ export function registerTools(server: McpServer, api: ApiClient): void {
   server.registerTool(
     "get_stop_departures",
     {
-      title: "Get stop departures",
+      title: "Get stop arrivals/departures",
       description:
-        "Get the next departures from a specific stop, merged across all routes that " +
-        "serve it. Use after finding a stop via find_nearby_stops or search_stops. " +
-        "Times are in the agency's local timezone; 'minutes' is minutes from now.",
+        "Get the next arrivals/departures from a specific stop, merged across all routes " +
+        "that serve it. When the agency publishes GTFS-Realtime, each departure is " +
+        "DELAY-AWARE (on time / N min late / N min early), with the time adjusted for the " +
+        "bus's actual position; otherwise times are clearly labeled scheduled. Use after " +
+        "finding a stop via find_nearby_stops or search_stops. Times are in the agency's " +
+        "local timezone; 'minutes_away' is minutes from now.",
       annotations: { readOnlyHint: true, openWorldHint: true },
       inputSchema: {
         stop_id: z.string().min(1).describe("GTFS stop_id (from a stop search/nearby result)."),
@@ -233,12 +248,20 @@ export function registerTools(server: McpServer, api: ApiClient): void {
               `be no more service today — suggest checking the agency website for the full schedule.`
           );
         }
-        const lines = data.departures.map(
-          (d) =>
-            `• ${d.time} (in ${d.minutes} min) — Route ${d.name}` +
-            `${d.headsign ? ` toward ${d.headsign}` : ""} (route_id: ${d.route_id})`
-        );
-        return text(`Next departures from ${stopName}:\n${lines.join("\n")}`);
+        const lines = data.departures.map((d) => {
+          const mins = d.minutes_away ?? d.minutes;
+          const when = mins <= 0 ? "due now" : `in ${mins} min`;
+          const time = d.predicted || d.time;
+          return (
+            `• ${time} (${when}) — Route ${d.name}` +
+            `${d.headsign ? ` toward ${d.headsign}` : ""} — ${depStatus(d)}` +
+            ` (route_id: ${d.route_id})`
+          );
+        });
+        const header = data.realtime
+          ? `Live arrivals from ${stopName} (real-time where available):`
+          : `Scheduled departures from ${stopName} (no real-time tracking for this stop):`;
+        return text(`${header}\n${lines.join("\n")}`);
       })
   );
 

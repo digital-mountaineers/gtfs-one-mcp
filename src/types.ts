@@ -64,6 +64,16 @@ export interface Departure {
   color: string;
   url?: string;
   headsign: string;
+  // RT-1: delay-aware fields
+  scheduled: string;
+  predicted: string;
+  delay_seconds: number | null;
+  status: "on_time" | "late" | "early" | "scheduled" | "no_data";
+  canceled?: boolean;
+  minutes_away: number;
+  realtime: boolean;
+  vehicle_id?: string | null;
+  // Back-compat aliases (pre-RT-1 consumers)
   time: string;
   minutes: number;
 }
@@ -71,6 +81,7 @@ export interface Departure {
 export interface DeparturesResponse {
   stop: { id: string; name: string; code: string };
   departures: Departure[];
+  realtime: boolean; // whether this board CAN show live predictions
   ts: number;
 }
 
