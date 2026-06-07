@@ -2,7 +2,7 @@ name: Publish to npm
 
 # Publishes the package to npm whenever a version tag (v1.2.3) is pushed.
 # Requires an NPM_TOKEN repository secret (an npm automation/granular token with
-# publish rights to gtfs-pro-mcp). Provenance attestations are generated via the
+# publish rights to gtfs-one-mcp). Provenance attestations are generated via the
 # GitHub OIDC token, so the repo must be public for them to be accepted.
 
 on:

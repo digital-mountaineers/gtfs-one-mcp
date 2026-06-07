@@ -1,12 +1,12 @@
 /**
- * Configuration loader for the GTFS Pro MCP server.
+ * Configuration loader for the GTFS One MCP server.
  *
  * Resolution order (later wins where they overlap):
- *   1. A JSON config file — path from `--config <path>`, else $GTFS_PRO_CONFIG,
- *      else ./gtfs-pro.config.json if it exists.
- *   2. Environment variables (GTFS_PRO_URL, GTFS_PRO_FEED_ID, ...).
+ *   1. A JSON config file — path from `--config <path>`, else $GTFS_ONE_CONFIG,
+ *      else ./gtfs-one.config.json if it exists.
+ *   2. Environment variables (GTFS_ONE_URL, GTFS_ONE_FEED_ID, ...).
  *
- * Only `gtfs_pro_url` is strictly required. Everything else has a sane default
+ * Only `gtfs_one_url` is strictly required. Everything else has a sane default
  * so a single-agency setup can run with just the URL.
  */
 
@@ -14,8 +14,8 @@ import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 
 export interface Config {
-  /** Base URL of the WordPress site running WP GTFS Pro (no trailing slash). */
-  gtfsProUrl: string;
+  /** Base URL of the WordPress site running GTFS One (no trailing slash). */
+  gtfsOneUrl: string;
   /** Default feed to use when the AI doesn't specify one. */
   feedId: string;
   /** Local response cache lifetime, in seconds (protects the WP site). */
@@ -27,7 +27,7 @@ export interface Config {
 }
 
 interface RawConfigFile {
-  gtfs_pro_url?: string;
+  gtfs_one_url?: string;
   feed_id?: string;
   cache_ttl_seconds?: number;
   agency_name?: string;
@@ -35,14 +35,14 @@ interface RawConfigFile {
 }
 
 function readConfigFile(): RawConfigFile {
-  // --config <path> takes precedence, then $GTFS_PRO_CONFIG, then a local default.
+  // --config <path> takes precedence, then $GTFS_ONE_CONFIG, then a local default.
   const argIdx = process.argv.indexOf("--config");
   const fromArg =
     argIdx !== -1 && process.argv[argIdx + 1] ? process.argv[argIdx + 1] : undefined;
   const candidate =
     fromArg ||
-    process.env.GTFS_PRO_CONFIG ||
-    (existsSync("gtfs-pro.config.json") ? "gtfs-pro.config.json" : undefined);
+    process.env.GTFS_ONE_CONFIG ||
+    (existsSync("gtfs-one.config.json") ? "gtfs-one.config.json" : undefined);
 
   if (!candidate) return {};
 
@@ -62,29 +62,29 @@ function readConfigFile(): RawConfigFile {
 export function loadConfig(): Config {
   const file = readConfigFile();
 
-  const gtfsProUrl = (process.env.GTFS_PRO_URL || file.gtfs_pro_url || "").trim();
-  if (!gtfsProUrl) {
+  const gtfsOneUrl = (process.env.GTFS_ONE_URL || file.gtfs_one_url || "").trim();
+  if (!gtfsOneUrl) {
     throw new Error(
-      "Missing GTFS Pro site URL. Set `gtfs_pro_url` in your config file or the " +
-        "GTFS_PRO_URL environment variable (e.g. https://your-agency-site.org)."
+      "Missing GTFS One site URL. Set `gtfs_one_url` in your config file or the " +
+        "GTFS_ONE_URL environment variable (e.g. https://your-agency-site.org)."
     );
   }
 
-  const ttlRaw = process.env.GTFS_PRO_CACHE_TTL ?? file.cache_ttl_seconds;
+  const ttlRaw = process.env.GTFS_ONE_CACHE_TTL ?? file.cache_ttl_seconds;
   const cacheTtlSeconds = Number.isFinite(Number(ttlRaw)) ? Number(ttlRaw) : 30;
 
   return {
     // Strip any trailing slash so we can concatenate the REST namespace cleanly.
-    gtfsProUrl: gtfsProUrl.replace(/\/+$/, ""),
-    feedId: (process.env.GTFS_PRO_FEED_ID || file.feed_id || "default").trim(),
+    gtfsOneUrl: gtfsOneUrl.replace(/\/+$/, ""),
+    feedId: (process.env.GTFS_ONE_FEED_ID || file.feed_id || "default").trim(),
     cacheTtlSeconds: cacheTtlSeconds >= 0 ? cacheTtlSeconds : 30,
     agencyName: (
-      process.env.GTFS_PRO_AGENCY_NAME ||
+      process.env.GTFS_ONE_AGENCY_NAME ||
       file.agency_name ||
       "this transit agency"
     ).trim(),
     agencyDescription: (
-      process.env.GTFS_PRO_AGENCY_DESCRIPTION ||
+      process.env.GTFS_ONE_AGENCY_DESCRIPTION ||
       file.agency_description ||
       ""
     ).trim(),

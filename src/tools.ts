@@ -1,5 +1,5 @@
 /**
- * The nine GTFS Pro MCP tools. Each wraps one REST endpoint, formats the result
+ * The nine GTFS One MCP tools. Each wraps one REST endpoint, formats the result
  * as readable text (IDs included so the AI can chain calls), and surfaces failures
  * as prose. Tool descriptions are written for the *model* — they spell out when an
  * empty result is normal so the AI never reads "no alerts" as "no service."
@@ -83,7 +83,7 @@ export function registerTools(server: McpServer, api: ApiClient): void {
     {
       title: "List transit feeds",
       description:
-        "List all transit feeds (agencies) configured on this GTFS Pro site. Most " +
+        "List all transit feeds (agencies) configured on this GTFS One site. Most " +
         "sites have a single feed. Use this to discover feed_id values when a site " +
         "serves more than one agency.",
       annotations: { readOnlyHint: true, openWorldHint: true },

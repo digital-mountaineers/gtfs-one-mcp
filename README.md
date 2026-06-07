@@ -1,18 +1,18 @@
-# gtfs-pro-mcp
+# gtfs-one-mcp
 
 A [Model Context Protocol](https://modelcontextprotocol.io) server that turns any
-[WP GTFS Pro](https://devbydm.com) transit site into a set of tools for AI
+[GTFS One](https://gtfs.one) transit site into a set of tools for AI
 assistants. Point it at an agency's WordPress site and Claude, ChatGPT, or any
 other MCP-compatible client can answer rider questions from the agency's **live**
 GTFS and GTFS-Realtime data — nearest stops, next departures, routes, live bus
 positions, and service alerts.
 
-It talks to the site's public REST API (`/wp-json/wp-gtfs-pro/v1/*`) — no plugins,
+It talks to the site's public REST API (`/wp-json/gtfs-one/v1/*`) — no plugins,
 no database access, no credentials required. One MCP server covers one transit site
 (which may host multiple agency feeds).
 
 > **Why this exists:** the only other transit MCP servers are single-agency,
-> hard-coded hobby projects. This one works with *any* GTFS Pro install, driven
+> hard-coded hobby projects. This one works with *any* GTFS One install, driven
 > entirely by configuration.
 
 ## Tools
@@ -36,7 +36,7 @@ service." The tool descriptions tell the AI this explicitly.
 ## Requirements
 
 - Node.js 18 or newer
-- A transit website running WP GTFS Pro 1.5+ with its REST API publicly reachable
+- A transit website running GTFS One 1.5+ with its REST API publicly reachable
 
 ## Configuration
 
@@ -44,9 +44,9 @@ Provide settings via a JSON config file **or** environment variables (env vars w
 where both are set). Only the site URL is required.
 
 ```jsonc
-// gtfs-pro.config.json
+// gtfs-one.config.json
 {
-  "gtfs_pro_url": "https://your-agency-site.org",
+  "gtfs_one_url": "https://your-agency-site.org",
   "feed_id": "default",
   "cache_ttl_seconds": 30,
   "agency_name": "Your Transit Agency",
@@ -56,14 +56,14 @@ where both are set). Only the site URL is required.
 
 | Setting | Env var | Default | Notes |
 |---------|---------|---------|-------|
-| `gtfs_pro_url` | `GTFS_PRO_URL` | — (required) | Base URL of the WP GTFS Pro site |
-| `feed_id` | `GTFS_PRO_FEED_ID` | `default` | Default feed so the AI needn't pass one each call |
-| `cache_ttl_seconds` | `GTFS_PRO_CACHE_TTL` | `30` | Local response cache; protects the WP site |
-| `agency_name` | `GTFS_PRO_AGENCY_NAME` | — | Shown in server metadata |
-| `agency_description` | `GTFS_PRO_AGENCY_DESCRIPTION` | — | Service-area context for the AI |
+| `gtfs_one_url` | `GTFS_ONE_URL` | — (required) | Base URL of the GTFS One site |
+| `feed_id` | `GTFS_ONE_FEED_ID` | `default` | Default feed so the AI needn't pass one each call |
+| `cache_ttl_seconds` | `GTFS_ONE_CACHE_TTL` | `30` | Local response cache; protects the WP site |
+| `agency_name` | `GTFS_ONE_AGENCY_NAME` | — | Shown in server metadata |
+| `agency_description` | `GTFS_ONE_AGENCY_DESCRIPTION` | — | Service-area context for the AI |
 
 Pass a non-default config path with `--config /path/to/config.json` or the
-`GTFS_PRO_CONFIG` env var.
+`GTFS_ONE_CONFIG` env var.
 
 ## Use with Claude Desktop
 
@@ -72,13 +72,13 @@ Edit `claude_desktop_config.json` (Settings → Developer → Edit Config) and a
 ```json
 {
   "mcpServers": {
-    "gtfs-pro-transit": {
+    "gtfs-one-transit": {
       "command": "npx",
-      "args": ["-y", "gtfs-pro-mcp"],
+      "args": ["-y", "gtfs-one-mcp"],
       "env": {
-        "GTFS_PRO_URL": "https://your-agency-site.org",
-        "GTFS_PRO_FEED_ID": "default",
-        "GTFS_PRO_AGENCY_NAME": "Your Transit Agency"
+        "GTFS_ONE_URL": "https://your-agency-site.org",
+        "GTFS_ONE_FEED_ID": "default",
+        "GTFS_ONE_AGENCY_NAME": "Your Transit Agency"
       }
     }
   }
@@ -95,13 +95,13 @@ service area\>?"* or *"When's the next bus from \<stop name\>?"*
 > ```json
 > {
 >   "mcpServers": {
->     "gtfs-pro-transit": {
+>     "gtfs-one-transit": {
 >       "command": "cmd",
->       "args": ["/c", "npx", "-y", "gtfs-pro-mcp"],
+>       "args": ["/c", "npx", "-y", "gtfs-one-mcp"],
 >       "env": {
->         "GTFS_PRO_URL": "https://your-agency-site.org",
->         "GTFS_PRO_FEED_ID": "default",
->         "GTFS_PRO_AGENCY_NAME": "Your Transit Agency"
+>         "GTFS_ONE_URL": "https://your-agency-site.org",
+>         "GTFS_ONE_FEED_ID": "default",
+>         "GTFS_ONE_AGENCY_NAME": "Your Transit Agency"
 >       }
 >     }
 >   }
@@ -114,11 +114,11 @@ service area\>?"* or *"When's the next bus from \<stop name\>?"*
 ## Use with ChatGPT / other MCP clients
 
 Any client that launches a local stdio MCP server works the same way — run
-`npx -y gtfs-pro-mcp` with the same environment variables, or install globally:
+`npx -y gtfs-one-mcp` with the same environment variables, or install globally:
 
 ```bash
-npm install -g gtfs-pro-mcp
-GTFS_PRO_URL=https://your-agency-site.org gtfs-pro-mcp
+npm install -g gtfs-one-mcp
+GTFS_ONE_URL=https://your-agency-site.org gtfs-one-mcp
 ```
 
 ## Remote / hosted connector (Streamable HTTP)
@@ -132,10 +132,10 @@ address; then add that URL as a custom connector.
 Run it in HTTP mode:
 
 ```bash
-GTFS_PRO_URL=https://your-agency-site.org \
-GTFS_PRO_AGENCY_NAME="Your Transit Agency" \
+GTFS_ONE_URL=https://your-agency-site.org \
+GTFS_ONE_AGENCY_NAME="Your Transit Agency" \
 PORT=3000 \
-gtfs-pro-mcp-http        # or: npm run start:http
+gtfs-one-mcp-http        # or: npm run start:http
 ```
 
 This serves the MCP endpoint at **`/mcp`** (and a `/healthz` check). Extra env:
@@ -147,7 +147,7 @@ This serves the MCP endpoint at **`/mcp`** (and a `/healthz` check). Extra env:
 
 ### Deploy
 
-- **Docker:** a `Dockerfile` is included — `docker build -t gtfs-pro-mcp . && docker run -p 3000:3000 -e GTFS_PRO_URL=… -e GTFS_PRO_AGENCY_NAME=… gtfs-pro-mcp`
+- **Docker:** a `Dockerfile` is included — `docker build -t gtfs-one-mcp . && docker run -p 3000:3000 -e GTFS_ONE_URL=… -e GTFS_ONE_AGENCY_NAME=… gtfs-one-mcp`
 - **Render / Railway / Fly.io (Node):** build `npm install && npm run build`, start `npm run start:http`, set the env vars. A `render.yaml` blueprint is included; Render gives you HTTPS automatically.
 - **Your own VPS:** run behind nginx/Caddy with TLS, proxying to the Node port.
 
@@ -158,8 +158,8 @@ if you'd rather gate it.
 
 In the Claude desktop app or claude.ai: **Settings → Connectors → Add custom
 connector**, give it a name, and paste your server's URL ending in **`/mcp`**
-(e.g. `https://gtfs-pro-mcp.onrender.com/mcp`). Then ask a transit question and
-you'll see the `gtfs-pro-transit` tools used.
+(e.g. `https://gtfs-one-mcp.onrender.com/mcp`). Then ask a transit question and
+you'll see the `gtfs-one-transit` tools used.
 
 ## Local development
 
@@ -173,12 +173,12 @@ node test/smoke.mjs # exercise all 9 tools against a live site
 
 ```
 Local (stdio):
-AI client  ──MCP/stdio──►  gtfs-pro-mcp  ──HTTPS──►  WP GTFS Pro REST API
-(Desktop)                  (local process)           /wp-json/wp-gtfs-pro/v1/*
+AI client  ──MCP/stdio──►  gtfs-one-mcp  ──HTTPS──►  GTFS One REST API
+(Desktop)                  (local process)           /wp-json/gtfs-one/v1/*
 
 Remote (Streamable HTTP):
-AI client  ──MCP/HTTPS──►  gtfs-pro-mcp-http  ──HTTPS──►  WP GTFS Pro REST API
-(web/app)                  (hosted service /mcp)          /wp-json/wp-gtfs-pro/v1/*
+AI client  ──MCP/HTTPS──►  gtfs-one-mcp-http  ──HTTPS──►  GTFS One REST API
+(web/app)                  (hosted service /mcp)          /wp-json/gtfs-one/v1/*
 ```
 
 Both transports share the same nine tools and config — pick stdio for local

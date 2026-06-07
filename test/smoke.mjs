@@ -9,9 +9,9 @@ const transport = new StdioClientTransport({
   args: ["dist/index.js"],
   env: {
     ...process.env,
-    GTFS_PRO_URL: "https://staging8.mountaintransit.org",
-    GTFS_PRO_FEED_ID: "default",
-    GTFS_PRO_AGENCY_NAME: "Mountain Transit",
+    GTFS_ONE_URL: "https://staging8.mountaintransit.org",
+    GTFS_ONE_FEED_ID: "default",
+    GTFS_ONE_AGENCY_NAME: "Mountain Transit",
   },
   stderr: "inherit",
 });

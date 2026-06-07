@@ -5,5 +5,5 @@
 }
 
 {$MCP_DOMAIN} {
-	reverse_proxy gtfs-pro-mcp:3000
+	reverse_proxy gtfs-one-mcp:3000
 }

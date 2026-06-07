@@ -1,5 +1,5 @@
 /**
- * Thin HTTP client for the WP GTFS Pro REST API.
+ * Thin HTTP client for the GTFS One REST API.
  *
  * Responsibilities:
  *  - Build namespaced URLs and inject the default feed_id.
@@ -29,7 +29,7 @@ export class ApiClient {
   private readonly cache = new Map<string, CacheEntry>();
 
   constructor(private readonly config: Config) {
-    this.base = `${config.gtfsProUrl}/wp-json/wp-gtfs-pro/v1`;
+    this.base = `${config.gtfsOneUrl}/wp-json/gtfs-one/v1`;
   }
 
   /** The configured default feed, used when a tool call omits feed_id. */
@@ -58,12 +58,12 @@ export class ApiClient {
     let res: Response;
     try {
       res = await fetch(href, {
-        headers: { Accept: "application/json", "User-Agent": "gtfs-pro-mcp" },
+        headers: { Accept: "application/json", "User-Agent": "gtfs-one-mcp" },
       });
     } catch {
       // Network-level failure: the WP site is unreachable. Spec §1.6 exact intent.
       throw new GtfsApiError(
-        `The transit data service at ${this.config.gtfsProUrl} is currently ` +
+        `The transit data service at ${this.config.gtfsOneUrl} is currently ` +
           `unavailable. The rider should check the agency website directly.`
       );
     }
@@ -99,13 +99,13 @@ export class ApiClient {
         headers: {
           Accept: "application/json",
           "Content-Type": "application/json",
-          "User-Agent": "gtfs-pro-mcp",
+          "User-Agent": "gtfs-one-mcp",
         },
         body: JSON.stringify(body),
       });
     } catch {
       throw new GtfsApiError(
-        `The transit data service at ${this.config.gtfsProUrl} is currently ` +
+        `The transit data service at ${this.config.gtfsOneUrl} is currently ` +
           `unavailable. The rider should check the agency website directly.`
       );
     }

@@ -32,10 +32,10 @@ Encrypt HTTPS) via Docker Compose. Written for a fresh host with Docker.
 
 3. **Clone + configure:**
    ```bash
-   git clone https://github.com/digital-mountaineers/gtfs-pro-mcp.git
-   cd gtfs-pro-mcp/deploy
+   git clone https://github.com/digital-mountaineers/gtfs-one-mcp.git
+   cd gtfs-one-mcp/deploy
    cp .env.example .env
-   nano .env   # set MCP_DOMAIN, ACME_EMAIL, GTFS_PRO_URL, GTFS_PRO_AGENCY_NAME
+   nano .env   # set MCP_DOMAIN, ACME_EMAIL, GTFS_ONE_URL, GTFS_ONE_AGENCY_NAME
    ```
 
 4. **Launch:**
@@ -59,7 +59,7 @@ Encrypt HTTPS) via Docker Compose. Written for a fresh host with Docker.
 
 ## Hosting multiple agencies on one box
 
-Add another `gtfs-pro-mcp-<agency>` service (its own `GTFS_PRO_URL` /
-`GTFS_PRO_AGENCY_NAME`) and a matching site block in the `Caddyfile`
-(`mcp-<agency>.devbydm.com { reverse_proxy gtfs-pro-mcp-<agency>:3000 }`). One
+Add another `gtfs-one-mcp-<agency>` service (its own `GTFS_ONE_URL` /
+`GTFS_ONE_AGENCY_NAME`) and a matching site block in the `Caddyfile`
+(`mcp-<agency>.devbydm.com { reverse_proxy gtfs-one-mcp-<agency>:3000 }`). One
 Caddy fronts them all, each with its own auto-provisioned cert.

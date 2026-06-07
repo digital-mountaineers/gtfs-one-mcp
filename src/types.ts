@@ -1,7 +1,7 @@
 /**
- * Response shapes for the WP GTFS Pro REST API (`/wp-json/wp-gtfs-pro/v1/*`).
+ * Response shapes for the GTFS One REST API (`/wp-json/gtfs-one/v1/*`).
  *
- * These mirror the actual JSON returned by a live GTFS Pro site (verified against
+ * These mirror the actual JSON returned by a live GTFS One site (verified against
  * a production install), not the idealized shapes in the spec — where they differ,
  * reality wins. Notably: `/stops/search` and `/stops/nearby` wrap results in a
  * `stops` array, and RT vehicles use `id`/`next_eta`/`next_stop` (not the

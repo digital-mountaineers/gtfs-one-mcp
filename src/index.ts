@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * GTFS Pro MCP server — stdio entry point.
+ * GTFS One MCP server — stdio entry point.
  *
  * Loads configuration, builds the server, and speaks MCP over stdio (the
  * transport Claude Desktop / Cursor / ChatGPT desktop use to launch a local
@@ -22,12 +22,12 @@ async function main(): Promise<void> {
 
   // Visible in the client's MCP logs; harmless on stderr.
   console.error(
-    `gtfs-pro-mcp ready (stdio) — agency: ${config.agencyName}, site: ${config.gtfsProUrl}, ` +
+    `gtfs-one-mcp ready (stdio) — agency: ${config.agencyName}, site: ${config.gtfsOneUrl}, ` +
       `default feed: ${config.feedId}`
   );
 }
 
 main().catch((err) => {
-  console.error(`gtfs-pro-mcp failed to start: ${(err as Error).message}`);
+  console.error(`gtfs-one-mcp failed to start: ${(err as Error).message}`);
   process.exit(1);
 });

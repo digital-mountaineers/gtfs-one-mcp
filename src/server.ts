@@ -27,7 +27,7 @@ export function buildInstructions(config: Config): string {
  */
 export function createServer(config: Config, api: ApiClient = new ApiClient(config)): McpServer {
   const server = new McpServer(
-    { name: "gtfs-pro-transit", version: "1.0.0" },
+    { name: "gtfs-one-transit", version: "1.0.0" },
     { instructions: buildInstructions(config) }
   );
   registerTools(server, api);

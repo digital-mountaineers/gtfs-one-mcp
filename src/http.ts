@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * GTFS Pro MCP server — Streamable HTTP entry point (remote / hosted transport).
+ * GTFS One MCP server — Streamable HTTP entry point (remote / hosted transport).
  *
  * This lets the server run as a public service that AI clients add as a "custom
  * connector" by URL — Claude (desktop + web), ChatGPT, etc. — with no local
@@ -8,7 +8,7 @@
  * sessions, exposes a single `/mcp` endpoint (POST to send, GET for the SSE
  * stream, DELETE to end a session), plus `/healthz`.
  *
- * Config is the same as the stdio server (GTFS_PRO_URL, etc.). Extra env:
+ * Config is the same as the stdio server (GTFS_ONE_URL, etc.). Extra env:
  *   PORT             - listen port (default 3000; most hosts inject this)
  *   MCP_AUTH_TOKEN   - optional. If set, clients must send `Authorization:
  *                      Bearer <token>`. Leave unset for an open server (the
@@ -64,12 +64,12 @@ function authorized(req: Request, res: Response): boolean {
 }
 
 app.get("/healthz", (_req, res) => {
-  res.json({ ok: true, agency: config.agencyName, site: config.gtfsProUrl });
+  res.json({ ok: true, agency: config.agencyName, site: config.gtfsOneUrl });
 });
 
 app.get("/", (_req, res) => {
   res.type("text/plain").send(
-    `gtfs-pro-mcp (Streamable HTTP) for ${config.agencyName}. ` +
+    `gtfs-one-mcp (Streamable HTTP) for ${config.agencyName}. ` +
       `MCP endpoint: POST ${"/mcp"}. Add this server's URL as a custom connector in your AI client.`
   );
 });
@@ -133,7 +133,7 @@ app.delete("/mcp", existingSession);
 
 app.listen(PORT, () => {
   console.error(
-    `gtfs-pro-mcp ready (http) — listening on :${PORT}, agency: ${config.agencyName}, ` +
-      `site: ${config.gtfsProUrl}${AUTH ? " [auth required]" : ""}`
+    `gtfs-one-mcp ready (http) — listening on :${PORT}, agency: ${config.agencyName}, ` +
+      `site: ${config.gtfsOneUrl}${AUTH ? " [auth required]" : ""}`
   );
 });

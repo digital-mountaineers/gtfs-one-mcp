@@ -8,13 +8,13 @@
 # 3001, so this should coexist — confirm with: sudo ss -tlnp | grep -E ':80 |:443 '
 
 services:
-  gtfs-pro-mcp:
+  gtfs-one-mcp:
     build: ..                      # builds the repo-root Dockerfile (HTTP mode)
     restart: unless-stopped
     environment:
-      GTFS_PRO_URL: ${GTFS_PRO_URL}
-      GTFS_PRO_AGENCY_NAME: ${GTFS_PRO_AGENCY_NAME}
-      GTFS_PRO_FEED_ID: ${GTFS_PRO_FEED_ID:-default}
+      GTFS_ONE_URL: ${GTFS_ONE_URL}
+      GTFS_ONE_AGENCY_NAME: ${GTFS_ONE_AGENCY_NAME}
+      GTFS_ONE_FEED_ID: ${GTFS_ONE_FEED_ID:-default}
       MCP_AUTH_TOKEN: ${MCP_AUTH_TOKEN:-}
       PORT: "3000"
     expose:
@@ -34,7 +34,7 @@ services:
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
-      - gtfs-pro-mcp
+      - gtfs-one-mcp
 
 volumes:
   caddy_data:
